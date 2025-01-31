@@ -1,0 +1,15 @@
+Base: 0.13493069306930694
+    Got 3407 / 25250 correct of val set (13.49)
+    Got 19 / 250 correct Hot Dogs (class 55) (7.60%)
+Augmented: 0.31302970297029703
+    Got 7904 / 25250 correct of val set (31.30)
+    Got 47 / 250 correct Hot Dogs (class 55) (18.80%)
+Resnet50 10 epochs: 0.5706930693069306
+    Got 14410 / 25250 correct of val set (57.07)
+    Got 148 / 250 correct Hot Dogs (class 55) (59.20%)
+Resnet50 20 epochs: 0.6918019801980198
+    Got 17468 / 25250 correct of val set (69.18)
+    Got 154 / 250 correct Hot Dogs (class 55) (61.60%)
+Resnet50 30 epochs: 0.7485940594059406
+    Got 18902 / 25250 correct of val set (74.86)
+    Got 171 / 250 correct Hot Dogs (class 55) (68.40%)
