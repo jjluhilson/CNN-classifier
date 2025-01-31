@@ -997,7 +997,7 @@ else:
 print(device)
     
 
-print_every = 10
+print_every = 100
 def check_accuracy(loader, model, analysis=False, hotdog_data=False):
     # function for test accuracy on validation and test set
     
@@ -1086,21 +1086,22 @@ def train_part(model, optimizer, epochs=1):
 # %%
 # define and train the network
 model = MyResNet()
-optimizer = optim.Adamax(model.parameters(), lr=0.0001, weight_decay=1e-7) 
+optimizer = optim.Adamax(model.parameters(), lr=0.001, weight_decay=1e-6) 
 
 params = sum(p.numel() for p in model.parameters() if p.requires_grad)
 print("Total number of parameters is: {}".format(params))
 
 train_part(model, optimizer, epochs = 10)
 
-torch.save(model.state_dict(), 'resnet5010epochsprecheck.pt')
+# save the model
+torch.save(model.state_dict(), 'resnet_tuned10.pt')
 
 # report test set accuracy
 check_accuracy(loader_val, model, analysis=True)
 
 
 # save the model
-torch.save(model.state_dict(), 'resnet5010epochs.pt')
+# torch.save(model.state_dict(), 'resnet_tuned.pt')
 
 # %%
 # Load the saved weights into the model
