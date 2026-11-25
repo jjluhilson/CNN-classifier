@@ -173,3 +173,6 @@ cython_debug/
 food-101/
 food-101.*
 hot-dog-10k*
+
+# Generated coursework grader log (the original is archived in results/)
+/.OTTER_LOG

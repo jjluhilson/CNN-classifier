@@ -69,7 +69,7 @@ try:
     #     content_path = f'/content/drive/MyDrive/{d1_cw1_repo_path}' # path to gitrepo in gdrive after mounting
     #     drive.mount('/content/drive/') # Outputs will be saved in your google drive
     # elif WORKING_ENV == 'LABS':
-    content_path = f'/vol/bitbucket/jl3821/DL_CW_1_jl3821/' # You may want to change this
+    content_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     # Your python env and training data should be on bitbucket
     print('Storing big data in ', content_path)
     if 'vol' not in content_path:
@@ -673,7 +673,7 @@ print(len(train_set), len(val_set), len(test_dataset))
 
 # The number of images to process in one go. If you run out of GPU
 # memory reduce this number! 
-# batch_size = 32 # was 128
+batch_size = 32 # was 128
 
 # Dataloaders are a great pytorch functionality for feeding data into our AI models.
 # see https://pytorch.org/docs/stable/data.html?highlight=dataloader#torch.utils.data.DataLoader
@@ -695,6 +695,15 @@ def get_num_workers():
 
 num_workers = get_num_workers()
 print(f"Using {num_workers} workers")
+loader_train = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+loader_val = DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+loader_test = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
+
+# %%
+print(loader_val)
+
+# %%
+print(loader_val)
 
 # %%
 unnormalize = transforms.Normalize((-mean / std).tolist(), (1.0 / std).tolist())
@@ -720,219 +729,219 @@ def show(img):
 # **Visualising some example images** 
 
 # %%
-# sample_inputs, _ = next(iter(loader_val))
-# fixed_input = sample_inputs[:27, :, :, :]
+sample_inputs, _ = next(iter(loader_val))
+fixed_input = sample_inputs[:27, :, :, :]
 
-# img = make_grid(denorm(fixed_input), nrow=9, padding=2, normalize=False,
-#                 value_range=None, scale_each=False, pad_value=0)
-# plt.figure(figsize=(20,10))
-# plt.axis('off')
-# show(img)
+img = make_grid(denorm(fixed_input), nrow=9, padding=2, normalize=False,
+                value_range=None, scale_each=False, pad_value=0)
+plt.figure(figsize=(20,10))
+plt.axis('off')
+show(img)
 
 # %% [markdown]
 # Next, we define ResNet-18:
 
 # %%
-# define resnet building blocks
-
-class ResidualBlock(nn.Module): 
-    def __init__(self, inchannel, outchannel, stride=1): 
-        
-        super(ResidualBlock, self).__init__() 
-        
-        self.left = nn.Sequential(nn.Conv2d(inchannel, outchannel, kernel_size=3, 
-                                         stride=stride, padding=1, bias=False), 
-                                  nn.BatchNorm2d(outchannel), 
-                                  nn.ReLU(inplace=True), 
-                                  nn.Conv2d(outchannel, outchannel, kernel_size=3, 
-                                         stride=1, padding=1, bias=False), 
-                                  nn.BatchNorm2d(outchannel)) 
-        
-        self.shortcut = nn.Sequential() 
-        
-        if stride != 1 or inchannel != outchannel: 
-            
-            self.shortcut = nn.Sequential(nn.Conv2d(inchannel, outchannel, 
-                                                 kernel_size=1, stride=stride, 
-                                                 padding = 0, bias=False), 
-                                          nn.BatchNorm2d(outchannel) ) 
-            
-    def forward(self, x): 
-        
-        out = self.left(x) 
-        
-        out += self.shortcut(x) 
-        
-        out = F.relu(out) 
-        
-        return out
-
-
-    
-# define resnet
-
-class ResNet(nn.Module):
-    
-    def __init__(self, ResidualBlock, num_classes = 101):
-        
-        super(ResNet, self).__init__()
-        
-        self.inchannel = 16
-        self.conv1 = nn.Sequential(nn.Conv2d(3, 16, kernel_size = 3, stride = 1,
-                                            padding = 1, bias = False), 
-                                  nn.BatchNorm2d(16), 
-                                  nn.ReLU())
-        
-        self.layer1 = self.make_layer(ResidualBlock, 16, 2, stride = 2)
-        self.layer2 = self.make_layer(ResidualBlock, 32, 2, stride = 2)
-        self.layer3 = self.make_layer(ResidualBlock, 64, 2, stride = 2)
-        self.layer4 = self.make_layer(ResidualBlock, 128, 2, stride = 2)
-        self.layer5 = self.make_layer(ResidualBlock, 256, 2, stride = 2)
-        self.layer6 = self.make_layer(ResidualBlock, 512, 2, stride = 2)
-        self.maxpool = nn.MaxPool2d(4)
-        self.fc = nn.Linear(512, num_classes)
-        
-    
-    def make_layer(self, block, channels, num_blocks, stride):
-        
-        strides = [stride] + [1] * (num_blocks - 1)
-        
-        layers = []
-        
-        for stride in strides:
-            
-            layers.append(block(self.inchannel, channels, stride))
-            
-            self.inchannel = channels
-            
-        return nn.Sequential(*layers)
-    
-    
-    def forward(self, x):
-        
-        x = self.conv1(x)
-        x = self.layer1(x)
-        x = self.layer2(x)
-        x = self.layer3(x)
-        x = self.layer4(x)
-        x = self.layer5(x)
-        x = self.layer6(x)
-        x = self.maxpool(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc(x)
-        return x
-    
-# please do not change the name of this class
-def MyResNet():
-    return ResNet(ResidualBlock)
-
-# %% [markdown]
-# Define ResNet-50
-
-# %%
 # # define resnet building blocks
-# class BottleneckBlock(nn.Module):
-#     expansion=4
-#     def __init__(self, in_channels, out_channels, stride=1, downsample=None):
-#         super(BottleneckBlock, self).__init__()
-#         self.expansion = 4  # Expansion factor for the number of channels
 
-#         # Main path
-#         self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
-#         self.bn1 = nn.BatchNorm2d(out_channels)
-#         self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
-#         self.bn2 = nn.BatchNorm2d(out_channels)
-#         self.conv3 = nn.Conv2d(out_channels, out_channels * self.expansion, kernel_size=1, bias=False)
-#         self.bn3 = nn.BatchNorm2d(out_channels * self.expansion)
-#         self.relu = nn.ReLU(inplace=True)
+# class ResidualBlock(nn.Module): 
+#     def __init__(self, inchannel, outchannel, stride=1): 
+        
+#         super(ResidualBlock, self).__init__() 
+        
+#         self.left = nn.Sequential(nn.Conv2d(inchannel, outchannel, kernel_size=3, 
+#                                          stride=stride, padding=1, bias=False), 
+#                                   nn.BatchNorm2d(outchannel), 
+#                                   nn.ReLU(inplace=True), 
+#                                   nn.Conv2d(outchannel, outchannel, kernel_size=3, 
+#                                          stride=1, padding=1, bias=False), 
+#                                   nn.BatchNorm2d(outchannel)) 
+        
+#         self.shortcut = nn.Sequential() 
+        
+#         if stride != 1 or inchannel != outchannel: 
+            
+#             self.shortcut = nn.Sequential(nn.Conv2d(inchannel, outchannel, 
+#                                                  kernel_size=1, stride=stride, 
+#                                                  padding = 0, bias=False), 
+#                                           nn.BatchNorm2d(outchannel) ) 
+            
+#     def forward(self, x): 
+        
+#         out = self.left(x) 
+        
+#         out += self.shortcut(x) 
+        
+#         out = F.relu(out) 
+        
+#         return out
 
-#         # Shortcut path
-#         self.downsample = downsample
-#         self.stride = stride
 
-#     def forward(self, x):
-#         identity = x
-
-#         # Main path
-#         out = self.conv1(x)
-#         out = self.bn1(out)
-#         out = self.relu(out)
-
-#         out = self.conv2(out)
-#         out = self.bn2(out)
-#         out = self.relu(out)
-
-#         out = self.conv3(out)
-#         out = self.bn3(out)
-
-#         # Shortcut path
-#         if self.downsample is not None:
-#             identity = self.downsample(x)
-
-#         # Add shortcut to main path
-#         out += identity
-#         out = self.relu(out)
-
-#         return out    
-
+    
 # # define resnet
 
 # class ResNet(nn.Module):
-#     def __init__(self, block, layers, num_classes=101):
+    
+#     def __init__(self, ResidualBlock, num_classes = 101):
+        
 #         super(ResNet, self).__init__()
-#         self.in_channels = 64  # Initial number of channels
-
-#         # Initial convolution layer
-#         self.conv1 = nn.Sequential(
-#             nn.Conv2d(3, self.in_channels, kernel_size=7, stride=2, padding=3, bias=False),
-#             nn.BatchNorm2d(self.in_channels),
-#             nn.ReLU(inplace=True),
-#             nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
-#         )
-
-#         # Residual layers
-# #         self.layer1 = self.make_layer(ResidualBlock, 16, 2, stride = 2)
-# #         self.layer2 = self.make_layer(ResidualBlock, 32, 2, stride = 2)
-#         self.layer1 = self._make_layer(block, 64, layers[0])
-#         self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
-#         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
-#         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
-
-#         # Fully connected layer
-#         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-#         self.fc = nn.Linear(512 * block.expansion, num_classes)
-
-#     def _make_layer(self, block, out_channels, blocks, stride=1):
-#         downsample = None
-#         if stride != 1 or self.in_channels != out_channels * block.expansion:
-#             downsample = nn.Sequential(
-#                 nn.Conv2d(self.in_channels, out_channels * block.expansion, kernel_size=1, stride=stride, bias=False),
-#                 nn.BatchNorm2d(out_channels * block.expansion),
-#             )
-
+        
+#         self.inchannel = 16
+#         self.conv1 = nn.Sequential(nn.Conv2d(3, 16, kernel_size = 3, stride = 1,
+#                                             padding = 1, bias = False), 
+#                                   nn.BatchNorm2d(16), 
+#                                   nn.ReLU())
+        
+#         self.layer1 = self.make_layer(ResidualBlock, 16, 2, stride = 2)
+#         self.layer2 = self.make_layer(ResidualBlock, 32, 2, stride = 2)
+#         self.layer3 = self.make_layer(ResidualBlock, 64, 2, stride = 2)
+#         self.layer4 = self.make_layer(ResidualBlock, 128, 2, stride = 2)
+#         self.layer5 = self.make_layer(ResidualBlock, 256, 2, stride = 2)
+#         self.layer6 = self.make_layer(ResidualBlock, 512, 2, stride = 2)
+#         self.maxpool = nn.MaxPool2d(4)
+#         self.fc = nn.Linear(512, num_classes)
+        
+    
+#     def make_layer(self, block, channels, num_blocks, stride):
+        
+#         strides = [stride] + [1] * (num_blocks - 1)
+        
 #         layers = []
-#         layers.append(block(self.in_channels, out_channels, stride, downsample))
-#         self.in_channels = out_channels * block.expansion
-
-#         for _ in range(1, blocks):
-#             layers.append(block(self.in_channels, out_channels))
-
+        
+#         for stride in strides:
+            
+#             layers.append(block(self.inchannel, channels, stride))
+            
+#             self.inchannel = channels
+            
 #         return nn.Sequential(*layers)
-
+    
+    
 #     def forward(self, x):
+        
 #         x = self.conv1(x)
 #         x = self.layer1(x)
 #         x = self.layer2(x)
 #         x = self.layer3(x)
 #         x = self.layer4(x)
-#         x = self.avgpool(x)
+#         x = self.layer5(x)
+#         x = self.layer6(x)
+#         x = self.maxpool(x)
 #         x = x.view(x.size(0), -1)
 #         x = self.fc(x)
 #         return x
     
 # # please do not change the name of this class
 # def MyResNet():
-#     return ResNet(BottleneckBlock, [3, 4, 6, 3])
+#     return ResNet(ResidualBlock)
+
+# %% [markdown]
+# Define ResNet-50
+
+# %%
+# define resnet building blocks
+class BottleneckBlock(nn.Module):
+    expansion=4
+    def __init__(self, in_channels, out_channels, stride=1, downsample=None):
+        super(BottleneckBlock, self).__init__()
+        self.expansion = 4  # Expansion factor for the number of channels
+
+        # Main path
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=1, bias=False)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=stride, padding=1, bias=False)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        self.conv3 = nn.Conv2d(out_channels, out_channels * self.expansion, kernel_size=1, bias=False)
+        self.bn3 = nn.BatchNorm2d(out_channels * self.expansion)
+        self.relu = nn.ReLU(inplace=True)
+
+        # Shortcut path
+        self.downsample = downsample
+        self.stride = stride
+
+    def forward(self, x):
+        identity = x
+
+        # Main path
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out = self.relu(out)
+
+        out = self.conv3(out)
+        out = self.bn3(out)
+
+        # Shortcut path
+        if self.downsample is not None:
+            identity = self.downsample(x)
+
+        # Add shortcut to main path
+        out += identity
+        out = self.relu(out)
+
+        return out    
+
+# define resnet
+
+class ResNet(nn.Module):
+    def __init__(self, block, layers, num_classes=101):
+        super(ResNet, self).__init__()
+        self.in_channels = 64  # Initial number of channels
+
+        # Initial convolution layer
+        self.conv1 = nn.Sequential(
+            nn.Conv2d(3, self.in_channels, kernel_size=7, stride=2, padding=3, bias=False),
+            nn.BatchNorm2d(self.in_channels),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=3, stride=2, padding=1)
+        )
+
+        # Residual layers
+#         self.layer1 = self.make_layer(ResidualBlock, 16, 2, stride = 2)
+#         self.layer2 = self.make_layer(ResidualBlock, 32, 2, stride = 2)
+        self.layer1 = self._make_layer(block, 64, layers[0])
+        self.layer2 = self._make_layer(block, 128, layers[1], stride=2)
+        self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
+        self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
+
+        # Fully connected layer
+        self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
+        self.fc = nn.Linear(512 * block.expansion, num_classes)
+
+    def _make_layer(self, block, out_channels, blocks, stride=1):
+        downsample = None
+        if stride != 1 or self.in_channels != out_channels * block.expansion:
+            downsample = nn.Sequential(
+                nn.Conv2d(self.in_channels, out_channels * block.expansion, kernel_size=1, stride=stride, bias=False),
+                nn.BatchNorm2d(out_channels * block.expansion),
+            )
+
+        layers = []
+        layers.append(block(self.in_channels, out_channels, stride, downsample))
+        self.in_channels = out_channels * block.expansion
+
+        for _ in range(1, blocks):
+            layers.append(block(self.in_channels, out_channels))
+
+        return nn.Sequential(*layers)
+
+    def forward(self, x):
+        x = self.conv1(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.avgpool(x)
+        x = x.view(x.size(0), -1)
+        x = self.fc(x)
+        return x
+    
+# please do not change the name of this class
+def MyResNet():
+    return ResNet(BottleneckBlock, [3, 4, 6, 3])
 
 # %%
 from sklearn.metrics import confusion_matrix
@@ -988,7 +997,7 @@ else:
 print(device)
     
 
-print_every = 10
+print_every = 100
 def check_accuracy(loader, model, analysis=False, hotdog_data=False):
     # function for test accuracy on validation and test set
     
@@ -1074,82 +1083,30 @@ def train_part(model, optimizer, epochs=1):
                 print('Epoch: %d, Iteration %d, loss = %.4f' % (e, t, loss.item()))
         check_accuracy(loader_val, model)
 
-# %% [markdown]
-# Hyper-parameter tuning
-
-# %%
-# Final test - was a grid search
-
-# best_accuracy = 0
-# best_weight_decay = None
-
-# weight_decay_values = [1e-7, 1e-6, 1e-5, 1e-4, 1e-3]  # Example range
-
-# for wd in weight_decay_values:
-#     print(f"Training with weight_decay = {wd}")
-#     model = MyResNet()  # Re-initialize the model for each run
-#     optimizer = optim.Adamax(model.parameters(), lr=0.0001, weight_decay=wd)
-#     train_part(model, optimizer, epochs=3)  # Or more epochs for a better assessment
-#     accuracy = check_accuracy(loader_val, model, analysis=False) #No need for analysis=True each time
-#     print(f"Validation accuracy: {accuracy}")
-
-#     if accuracy > best_accuracy:
-#         best_accuracy = accuracy
-#         best_weight_decay = wd
-#         torch.save(model.state_dict(), 'best_model_wd.pt') #Save the best model
-
-# print(f"Best weight_decay: {best_weight_decay} with validation accuracy: {best_accuracy}")
-
-# best_accuracy = 0
-# best_lr = None
-# best_weight_decay = 1e-06
-
-# lr_values = [0.00001,0.0001,0.001,0.01]  # Example range
-batch_sizes = [32, 64, 128, 256]
-best_batch_size = None
-best_accuracy = 0
-for batch_size in batch_sizes:
-    loader_train = DataLoader(train_set, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    loader_val = DataLoader(val_set, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    # loader_test = DataLoader(test_dataset, batch_size=batch_size, shuffle=True, num_workers=num_workers)
-    print(f"Training with batch_size = {batch_size}")
-    model = MyResNet()  # Re-initialize the model for each run
-    optimizer = optim.Adamax(model.parameters(), lr=0.001, weight_decay=1e-6)
-    train_part(model, optimizer, epochs=3)  # Or more epochs for a better assessment
-    accuracy = check_accuracy(loader_val, model, analysis=False) #No need for analysis=True each time
-    print(f"Validation accuracy: {accuracy}")
-
-    if accuracy > best_accuracy:
-        best_accuracy = accuracy
-        best_batch_size = batch_size
-        torch.save(model.state_dict(), 'best_model_batch_size.pt') #Save the best model
-
-print(f"Best batch size: {best_batch_size} with validation accuracy: {best_accuracy}")
-
-#best_lr=0.001
-
 # %%
 # define and train the network
-# model = MyResNet()
-# optimizer = optim.Adamax(model.parameters(), lr=0.001, weight_decay=1e-6) 
+model = MyResNet()
+optimizer = optim.Adamax(model.parameters(), lr=0.001, weight_decay=1e-6) 
 
-# params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-# print("Total number of parameters is: {}".format(params))
+params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+print("Total number of parameters is: {}".format(params))
 
-# train_part(model, optimizer, epochs = 10)
+train_part(model, optimizer, epochs = 30)
 
+# save the model
+torch.save(model.state_dict(), os.path.join(content_path, 'checkpoints', 'resnet_tuned30.pt'))
 
-# # report test set accuracy
-# check_accuracy(loader_val, model, analysis=True)
+# report test set accuracy
+check_accuracy(loader_val, model, analysis=True)
 
 
 # save the model
-# torch.save(model.state_dict(), 'model.pt')
+# torch.save(model.state_dict(), 'resnet_tuned.pt')
 
-# # %%
-# # Load the saved weights into the model
+# %%
+# Load the saved weights into the model
 # model = MyResNet()
-# model.load_state_dict(torch.load('resnet5010epochs.pt'))
+# model.load_state_dict(torch.load('model.pt'))
 # model = model.to(device=device)  # move the model parameters to CPU/GPU
 
 # # %% [markdown]
@@ -1166,60 +1123,64 @@ print(f"Best batch size: {best_batch_size} with validation accuracy: {best_accur
 
 # # %%
 # # Run once your have trained your final model
-check_accuracy(loader_test, model, analysis=True)
+# check_accuracy(loader_test, model, analysis=True)
 
-# %% [markdown]
-# ___
+# # %% [markdown]
+# # ___
 
-# %% [markdown]
-# <!-- END QUESTION -->
-# 
-# <!-- BEGIN QUESTION -->
-# 
-# ### Q2.1: Engineering Decisions 
-# 
-# Detail which engineering decisions you made to boost the performance of the baseline results. Note that you are not required to implement all of them and some in the list below are pointless. One or two reasonable choices are sufficient to reach all points, we are only looking for minor improvements. (12 points for improving performance, 22 points for the soundness of adaptations made)
-# 
-# ### Select valid engineering decisions that were made to improve the baseline results for the custom deep learning model. Tick all that apply.
+# # %% [markdown]
+# # <!-- END QUESTION -->
+# # 
+# # <!-- BEGIN QUESTION -->
+# # 
+# # ### Q2.1: Engineering Decisions 
+# # 
+# # Detail which engineering decisions you made to boost the performance of the baseline results. Note that you are not required to implement all of them and some in the list below are pointless. One or two reasonable choices are sufficient to reach all points, we are only looking for minor improvements. (12 points for improving performance, 22 points for the soundness of adaptations made)
+# # 
+# # ### Select valid engineering decisions that were made to improve the baseline results for the custom deep learning model. Tick all that apply.
 
-# %% [markdown]
-# **Answer:**
-# 
-# - [X] 1. Data augmentation was used to increase the size and diversity of the training dataset.
-# - [X] 2. Implemented a custom ResNet variant similar in depth to ResNet50.
-# - [ ] 3. LeakyReLU activation was chosen to address the Dying ReLU problem.
-# - [X] 4. Randomized search was used to tune hyperparameters, testing 20 combinations.
-# - [ ] 5. A k-fold cross-validation randomized search was used for hyperparameter tuning.
-# - [ ] 6. A cosine annealing learning rate scheduler was used to improve accuracy.
-# - [X] 7. The best weight decay value was found to be 1e-06.
-# - [ ] 8. The optimal batch size for training was <fill in>.
-# - [ ] 9. Dropout was used extensively to improve regularization.
-# - [ ] 10. Batch normalization was used instead of dropout for regularization.
-# - [ ] 11. Early stopping was implemented to prevent overfitting.
-# - [ ] 12. The model achieved <fill in>% accuracy on the validation set after training for <fill in> epochs.
-# - [ ] 13. The learning rate was kept constant throughout training.
-# - [ ] 14. ImageNet AutoAugment was used for data augmentation.
-# - [X] 15. Data augmentation transformations were manually defined.
-# - [ ] 16. The final model architecture included max pooling layers after each convolutional block.
-# - [X] 17. Global average pooling was used in the final layer instead of max pooling.
-# - [ ] 18. The training dataset was expanded to include 200 additional classes.
-# - [ ] 19. Increasing the number of epochs improved model accuracy without overfitting.
-# - [ ] 20. The model achieved a plateau in validation accuracy, indicating overfitting.
-# - [ ] 21. The labels were converted to binary classification (Hot Dog/No Hot Dog) to improve only Hot Dog detection accuracy.
-# 
-# New accuracy after extension: ...
+# # %% [markdown]
+# # **Answer:**
+# # 
+# # - [X] 1. Data augmentation was used to increase the size and diversity of the training dataset.
+# # - [ ] 2. Implemented a custom ResNet variant similar in depth to ResNet50.
+# # - [ ] 3. LeakyReLU activation was chosen to address the Dying ReLU problem.
+# # - [ ] 4. Randomized search was used to tune hyperparameters, testing 20 combinations.
+# # - [ ] 5. A k-fold cross-validation randomized search was used for hyperparameter tuning.
+# # - [ ] 6. A cosine annealing learning rate scheduler was used to improve accuracy.
+# # - [ ] 7. The best weight decay value was found to be <fill in>.
+# # - [ ] 8. The optimal batch size for training was <fill in>.
+# # - [ ] 9. Dropout was used extensively to improve regularization.
+# # - [ ] 10. Batch normalization was used instead of dropout for regularization.
+# # - [ ] 11. Early stopping was implemented to prevent overfitting.
+# # - [ ] 12. The model achieved <fill in>% accuracy on the validation set after training for <fill in> epochs.
+# # - [ ] 13. The learning rate was kept constant throughout training.
+# # - [ ] 14. ImageNet AutoAugment was used for data augmentation.
+# # - [ ] 15. Data augmentation transformations were manually defined.
+# # - [ ] 16. The final model architecture included max pooling layers after each convolutional block.
+# # - [ ] 17. Global average pooling was used in the final layer instead of max pooling.
+# # - [ ] 18. The training dataset was expanded to include 200 additional classes.
+# # - [ ] 19. Increasing the number of epochs improved model accuracy without overfitting.
+# # - [ ] 20. The model achieved a plateau in validation accuracy, indicating overfitting.
+# # - [ ] 21. The labels were converted to binary classification (Hot Dog/No Hot Dog) to improve only Hot Dog detection accuracy.   
+# # DO: 1, 2  
+# # MAYBE: 7,8,17  
+# # FILL: 12  
+# # 21 should be doable if change train and test.txt
+# # 
+# # New accuracy after extension: ...
 
-# %% [markdown]
-# ---
+# # %% [markdown]
+# # ---
 
-# %% [markdown]
-# <!-- END QUESTION -->
-# 
-# <!-- BEGIN QUESTION -->
-# 
-# ### Q2.2: Out of distribution evaluation
-# 
-# Lets see how your trained model performs on a custom hot dog detection dataset. Do not try and modify your model to perform well on this task, this is just a reflective exercise. How did your model perform at the task? Why do you think this was the case? Detail one method which you expect would improve model performance. (5 points)
+# # %% [markdown]
+# # <!-- END QUESTION -->
+# # 
+# # <!-- BEGIN QUESTION -->
+# # 
+# # ### Q2.2: Out of distribution evaluation
+# # 
+# # Lets see how your trained model performs on a custom hot dog detection dataset. Do not try and modify your model to perform well on this task, this is just a reflective exercise. How did your model perform at the task? Why do you think this was the case? Detail one method which you expect would improve model performance. (5 points)
 
 # # %%
 # from icl_dl_cw2_utils.utils.hotdogdataset import DLHotDogDataset

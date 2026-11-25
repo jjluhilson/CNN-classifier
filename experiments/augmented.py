@@ -43,7 +43,7 @@ try:
         # content_path = f'/content/drive/MyDrive/{d1_cw1_repo_path}' # path to gitrepo in gdrive after mounting
         # drive.mount('/content/drive/') # Outputs will be saved in your google drive
     # elif WORKING_ENV == 'LABS':
-    content_path = f'/vol/bitbucket/jl3821/DL_CW_1_jl3821/' # You may want to change this
+    content_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     # Your python env and training data should be on bitbucket
     print('Storing big data in ', content_path)
     if 'vol' not in content_path:
@@ -491,4 +491,4 @@ check_accuracy(loader_val, model, analysis=True)
 
 
 # save the model
-torch.save(model.state_dict(), 'augmented-script.pt')        
+torch.save(model.state_dict(), os.path.join(content_path, 'checkpoints', 'augmented-script.pt'))        

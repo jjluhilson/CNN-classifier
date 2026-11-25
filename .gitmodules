@@ -1,0 +1,3 @@
+[submodule "icl_dl_cw2_utils"]
+	path = icl_dl_cw2_utils
+	url = https://github.com/bkainz/icl_dl_cw2_utils
