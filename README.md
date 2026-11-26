@@ -1,28 +1,30 @@
 # Food-101 Classification with Custom ResNets
 
-A PyTorch computer vision project developed for deep learning coursework at Imperial College London. The work covers implementing core neural network operations, training residual networks from scratch, and evaluating a food classifier on both real photographs and synthetic images.
+A PyTorch computer vision project developed as part of the deep learning course at Imperial College London. The work covers implementing core neural network operations, training residual networks from scratch, and evaluating a food classifier on both real photographs and synthetic images.
 
 The best model achieved **74.86% top-1 accuracy across 101 food classes**, up from a recorded baseline of **13.49%**. It uses a custom ResNet-50 architecture trained for 30 epochs, with data augmentation and tuned training hyperparameters.
 
-Start with the [coursework notebook](dl_cw_1.ipynb) for the full experiments and saved outputs, [resnet503.py](experiments/resnet503.py) for the best training configuration, and [resnet_tuned30.pt](checkpoints/resnet_tuned30.pt) for its saved weights.
+Start with the [coursework notebook](dl_cw_1.ipynb) for the full experiments and saved outputs, [train_resnet50_30_epochs.py](experiments/train_resnet50_30_epochs.py) for the best training configuration, and [resnet50_30_epochs.pt](checkpoints/resnet50_30_epochs.pt) for its saved weights.
 
 ## Results
 
 The following results were recorded on the **25,250-image Food-101 test split**. Hot dog recall measures how many of its 250 hot dog images were correctly assigned to class 55.
 
-| Experiment | Top-1 test accuracy | Hot dog recall |
-| :--- | ---: | ---: |
-| Baseline | 13.49% | 7.60% |
-| Augmented model | 31.30% | 18.80% |
-| Custom ResNet-50, 10 epochs | 57.07% | 59.20% |
-| Custom ResNet-50, 20 epochs | 69.18% | 61.60% |
-| **Custom ResNet-50, 30 epochs** | **74.86%** | **68.40%** |
+| Experiment | Top-1 test accuracy | Hot dog recall | Checkpoint |
+| :--- | ---: | ---: | :--- |
+| ResNet-18 baseline | 13.49% | 7.60% | [baseline.pt](checkpoints/baseline.pt) |
+| ResNet-18 with augmentation | 31.30% | 18.80% | [augmented.pt](checkpoints/augmented.pt) |
+| Custom ResNet-50, 10 epochs | 57.07% | 59.20% | [resnet50_10_epochs.pt](checkpoints/resnet50_10_epochs.pt) |
+| Custom ResNet-50, 20 epochs | 69.18% | 61.60% | [resnet50_20_epochs.pt](checkpoints/resnet50_20_epochs.pt) |
+| **Custom ResNet-50, 30 epochs** | **74.86%** | **68.40%** | [resnet50_30_epochs.pt](checkpoints/resnet50_30_epochs.pt) |
 
 ![Recorded Food-101 test accuracy and hot dog recall for each experiment](results/figures/model_comparison.png)
 
-The final checkpoint correctly classified **18,902 / 25,250** test images, including **171 / 250** hot dogs. This represents a **61.37 percentage point** improvement over the baseline. The augmented run improved on the baseline, and the deeper architecture with longer training produced the strongest recorded result. These runs changed multiple factors and training budgets, so they show the progression of the project rather than a controlled ablation of each technique.
+The first experiment tested how much data augmentation helped the ResNet-18 baseline, improving accuracy from **13.49% to 31.30%**. The later models kept data augmentation and switched to the deeper ResNet-50, producing a further jump in accuracy. Longer training then brought the best result to **74.86%**.
 
-The [original results summary](results/test_accuracies.txt) records all five runs. The notebook's **Network Performance** section evaluates `loader_test` after loading `resnet_tuned30.pt`, confirming the final row. The accuracy helper prints “val set” for every loader; the 25,250-image results above are test results.
+The final checkpoint correctly classified **18,902 / 25,250** test images, including **171 / 250** hot dogs. This represents a **61.37 percentage point** improvement over the baseline.
+
+The [original results summary](results/test_accuracies.txt) records all five runs. The notebook's **Network Performance** section evaluates `loader_test` after loading `resnet50_30_epochs.pt`, confirming the final row. The notebook's accuracy helper prints “val set” for every loader; the 25,250-image results above are test results.
 
 ### Generalisation to synthetic hot dogs
 
@@ -38,7 +40,7 @@ Part 1 implements the forward passes for 2D convolution, max pooling, a linear l
 
 ### Best classifier
 
-The final model is implemented directly in [resnet503.py](experiments/resnet503.py), with bottleneck residual blocks arranged as **[3, 4, 6, 3]**, batch normalisation, ReLU activations, global average pooling, and a 101-class linear head. It is trained from scratch, without loading pretrained weights.
+The final model is implemented directly in [train_resnet50_30_epochs.py](experiments/train_resnet50_30_epochs.py), with bottleneck residual blocks arranged as **[3, 4, 6, 3]**, batch normalisation, ReLU activations, global average pooling, and a 101-class linear head. It is trained from scratch, without loading pretrained weights.
 
 | Setting | Final configuration |
 | :--- | :--- |
@@ -67,7 +69,7 @@ The notebook uses forward hooks to inspect activations from the initial convolut
 
 The saved training log ends at **62.16% validation accuracy**, below the final test accuracy. Validation shares the stochastic training transforms, whereas the test set uses deterministic preprocessing, so the two scores use different evaluation conditions. Duplicating images before the train/validation split also allows versions of the same source image into both subsets. A future experiment should split original images first and use deterministic validation transforms.
 
-The results are individual coursework runs, without repeated-seed estimates. PyTorch is seeded, but Python's `random` module, which selects duplicate images, is not. The notebook's training cell currently says 10 epochs even though its retained output contains the 30-epoch log; use `experiments/resnet503.py` for the final 30-epoch configuration. The final test evaluation explicitly loads the saved best checkpoint.
+The results are individual coursework runs, without repeated-seed estimates. PyTorch is seeded, but Python's `random` module, which selects duplicate images, is not. The notebook's training cell currently says 10 epochs even though its retained output contains the 30-epoch log; use `experiments/train_resnet50_30_epochs.py` for the final 30-epoch configuration. The final test evaluation explicitly loads the saved best checkpoint.
 
 ## Repository layout
 
@@ -77,25 +79,28 @@ The results are individual coursework runs, without repeated-seed estimates. PyT
 ├── dl_cw_1.ipynb              # Coursework, analysis, and saved outputs
 ├── requirements.txt          # Original pinned coursework dependencies
 ├── experiments/
-│   ├── resnet503.py          # Best configuration: ResNet-50, 30 epochs
-│   ├── resnet502.py          # ResNet-50, 20 epochs
-│   ├── resnet50.py           # ResNet-50, 10 epochs
-│   ├── augmented.py          # Earlier augmentation experiment
-│   └── batch_size.py         # Preliminary hyperparameter experiments
+│   ├── train_resnet50_30_epochs.py  # Best configuration: ResNet-50, 30 epochs
+│   ├── train_resnet50_20_epochs.py  # ResNet-50, 20 epochs
+│   ├── train_resnet50_10_epochs.py  # ResNet-50, 10 epochs
+│   ├── train_augmented.py         # Earlier augmentation experiment
+│   └── tune_batch_size.py         # Preliminary batch size experiments
 ├── checkpoints/
-│   ├── resnet_tuned30.pt     # Best performing checkpoint
-│   ├── resnet_tuned20.pt
-│   ├── resnet_tuned10.pt
+│   ├── resnet50_30_epochs.pt  # Best performing checkpoint
+│   ├── resnet50_20_epochs.pt
+│   ├── resnet50_10_epochs.pt
+│   ├── model.pt              # Submission checkpoint
 │   └── ...                   # Original baseline and tuning checkpoints
 ├── results/
 │   ├── test_accuracies.txt   # Original experiment summary
 │   ├── otter_log.pkl         # Archived original grader log
 │   └── figures/              # Results chart and extracted notebook figures
 ├── tests/                    # Supplied public Otter layer checks
-└── icl_dl_cw2_utils/          # External coursework utilities (Git submodule)
+└── icl_dl_cw2_utils/         # External coursework utilities (Git submodule)
 ```
 
-The coursework code, checkpoints, notebook outputs, and written answers have been retained. Source changes for the reorganisation are limited to repository and checkpoint paths.
+The notebook retains the coursework analysis and saved outputs. Training scripts have been tidied to remove commented-out notebook exports and submission scaffolding; model definitions and training settings are preserved. Their model definitions can be imported without starting training.
+
+The original submission checkpoint is retained as `checkpoints/model.pt` (which is the same model as `checkpoints/resnet50_30_epochs.pt`). The notebook loads the best model directly from `checkpoints/resnet50_30_epochs.pt`.
 
 ## Running the project
 
@@ -119,10 +124,10 @@ To run experiments:
 3. To train the final configuration, run:
 
    ```bash
-   python experiments/resnet503.py
+   python experiments/train_resnet50_30_epochs.py
    ```
 
-   This runs 30 epochs, reports validation accuracy, and writes `checkpoints/resnet_tuned30.pt`, replacing that file if it already exists. Use the notebook's test evaluation afterwards to measure test accuracy.
+   This runs 30 epochs, reports validation accuracy, and writes `checkpoints/resnet50_30_epochs.pt`, replacing that file if it already exists. Use the notebook's test evaluation afterwards to measure test accuracy.
 
 The files in `tests/` are Otter checks for the notebook's layer definitions. Run their associated `grader.check(...)` cells, or the final `grader.check_all()` cell, after defining the four layers.
 
